@@ -1,0 +1,10 @@
+[package]
+name = "cli-dev"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crossbeam-channel.workspace = true
+
+[lints]
+workspace = true
