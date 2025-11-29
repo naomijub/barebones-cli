@@ -2,19 +2,24 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::sync::RwLock;
+use std::time::SystemTime;
 
 use crate::APP_NAME;
 use crate::config::data::MyConfig;
+use crate::config::error::Error;
+use crate::logger::log_debug;
 use config::{Config, File};
 
 pub mod data;
-pub mod watcher;
+pub mod error;
+
+static LAST_MODIFIED: OnceLock<RwLock<SystemTime>> = OnceLock::new();
 
 #[cfg(target_os = "windows")]
 pub fn executable_location() -> PathBuf {
     dirs::home_dir()
         .expect("System should contain home dir")
-        .join(APP_NAME)
+        .join(format!(".{APP_NAME}"))
         .join("barebones-cli.exe")
 }
 
@@ -22,64 +27,93 @@ pub fn executable_location() -> PathBuf {
 pub fn executable_location() -> PathBuf {
     dirs::home_dir()
         .expect("System should contain home dir")
-        .join(APP_NAME)
+        .join(format!(".{APP_NAME}"))
         .join("barebones-cli")
 }
 
-#[cfg(target_os = "windows")]
-pub fn config_location() -> PathBuf {
-    dirs::config_dir()
-        .expect("System should contain config dir")
-        .join(format!("{}.toml", APP_NAME))
+pub fn config_dir() -> PathBuf {
+    dirs::home_dir()
+        .expect("System should contain home dir")
+        .join(format!(".{APP_NAME}"))
 }
 
-#[cfg(not(target_os = "windows"))]
 pub fn config_location() -> PathBuf {
-    dirs::config_dir()
-        .expect("System should contain config dir")
-        .join(format!("{}.toml", APP_NAME))
+    dirs::home_dir()
+        .expect("System should contain home dir")
+        .join(format!(".{APP_NAME}"))
+        .join("config.toml")
 }
 
 fn settings() -> &'static RwLock<Config> {
     static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
     CONFIG.get_or_init(|| {
-        let settings = load();
+        let settings = load().unwrap();
 
         RwLock::new(settings)
     })
 }
 
-pub fn refresh() {
-    *settings().write().unwrap() = load();
+pub fn refresh() -> Result<(), Error> {
+    let config_path = config_location();
+    if let (Ok(time), old) = (
+        std::fs::metadata(config_path)?.modified(),
+        LAST_MODIFIED.get_or_init(|| RwLock::new(SystemTime::now())),
+    ) {
+        let mut should_update = false;
+        if let Ok(old) = old.read()
+            && *old != time
+        {
+            should_update = true;
+        }
+        if should_update && let Ok(mut old) = old.write() {
+            *old = time;
+            let new_config = load()?;
+            log_debug(format!(
+                "Updated Config: {}",
+                toml::to_string_pretty(&new_config.clone().try_deserialize::<MyConfig>()?)?
+            ));
+            *settings()
+                .write()
+                .map_err(|err| Error::LockPoison(err.to_string()))? = new_config;
+        }
+    }
+
+    Ok(())
 }
 
-fn load() -> Config {
+fn load() -> Result<Config, Error> {
     let config_path = config_location();
-    if !std::fs::exists(&config_path).unwrap_or_default() {
+    create_config(&config_path)?;
+
+    Ok(Config::builder()
+        .add_source(File::with_name(config_path.to_string_lossy().trim()).required(true))
+        .build()?)
+}
+
+fn create_config(config_path: &PathBuf) -> Result<(), Error> {
+    if !std::fs::exists(config_path).unwrap_or_default() {
+        std::fs::create_dir_all(config_dir())?;
         let mut file = std::fs::OpenOptions::new()
             .create_new(true)
             .write(true)
             .append(false)
-            .open(config_path.to_string_lossy().trim())
-            .expect("must be able to create config file");
+            .open(config_path.to_string_lossy().trim())?;
         let config = MyConfig::default();
-        let conf = toml::to_string(&config).unwrap();
-        file.write_all(conf.as_bytes()).unwrap();
+        let conf = toml::to_string(&config)?;
+        file.write_all(conf.as_bytes())?;
+        LAST_MODIFIED.get_or_init(|| RwLock::new(SystemTime::now()));
     }
-    Config::builder()
-        .add_source(File::with_name(config_path.to_string_lossy().trim()).required(true))
-        .build()
-        .unwrap()
+
+    Ok(())
 }
 
-pub fn show() {
-    println!(
-        " * Settings :: \n\x1b[31m{:?}\x1b[0m",
-        settings()
-            .read()
-            .unwrap()
-            .clone()
-            .try_deserialize::<MyConfig>()
-            .unwrap()
-    );
+pub fn get_settings() -> Result<MyConfig, Error> {
+    let config = settings()
+        .read()
+        .map_err(|err| Error::LockPoison(err.to_string()))?
+        .clone()
+        .try_deserialize::<MyConfig>()?;
+    let toml_config = toml::to_string_pretty(&config).unwrap_or_default();
+    log_debug(format!(" * Settings: \n\x1b[31m{}\x1b[0m", toml_config));
+    Ok(config)
 }

@@ -10,6 +10,8 @@ pub struct MyConfig {
         serialize_with = "serialize_version"
     )]
     version: Version,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub plugins: Vec<String>,
 }
 
 pub fn serialize_version<S>(value: &Version, s: S) -> Result<S::Ok, S::Error>
@@ -39,6 +41,7 @@ impl Default for MyConfig {
             name: "Julia Naomi".to_string(),
             is_machine: false,
             version: Version::parse("1.0.0").unwrap(),
+            plugins: Vec::new(),
         }
     }
 }

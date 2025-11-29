@@ -1,0 +1,15 @@
+[package]
+name = "greeter"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+cli-dev.workspace = true
+
+abi_stable.workspace = true
+
+[lints]
+workspace = true
