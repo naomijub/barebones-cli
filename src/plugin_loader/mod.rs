@@ -1,15 +1,14 @@
 pub mod error;
 
-use abi_stable::library::RootModule;
+use std::{fs, path::Path, str::FromStr};
+
+use abi_stable::{library::RootModule, std_types::RString};
 use cli_dev::{
     logging::{log_debug, log_error, log_info},
     plugin::PluginModRef,
 };
-use std::fs;
-use std::path::Path;
 
-use crate::plugin_loader::error::Error;
-use crate::{config::data::MyConfig, logger::log_warn};
+use crate::{config::data::MyConfig, logger::log_warn, plugin_loader::error::Error};
 
 pub struct PluginManager {
     plugins: Vec<LoadedPlugin>,
@@ -123,10 +122,18 @@ impl PluginManager {
         };
 
         if !result.success {
-            log_error(plugin.module, result.output);
+            let binding = (plugin.module.get_info())
+                .map(|f| f().name)
+                .unwrap_or_else(|| RString::from_str("UNKNOWN").unwrap());
+            let name = binding.as_str();
+            eprintln!("{}: {}", name, result.output);
             std::process::exit(result.exit_code);
         } else {
-            log_info(plugin.module, result.output);
+            let binding = (plugin.module.get_info())
+                .map(|f| f().name)
+                .unwrap_or_else(|| RString::from_str("UNKNOWN").unwrap());
+            let name = binding.as_str();
+            println!("{}: {}", name, result.output);
             std::process::exit(exitcode::OK);
         }
     }
@@ -145,6 +152,7 @@ impl PluginManager {
                 info.name, info.version, info.description
             ));
         }
+        std::process::exit(exitcode::OK);
     }
 
     pub fn show_help(&self, plugin_name: &str) -> Result<(), Error> {
@@ -154,9 +162,10 @@ impl PluginManager {
             .find(|p| p.name == plugin_name)
             .ok_or_else(|| Error::NotFound(plugin_name.to_string()))?;
 
-        let help = (plugin.module.get_help()).unwrap()();
+        let help =
+            (plugin.module.get_help()).ok_or_else(|| Error::HelpFn(plugin_name.to_string()))?();
         println!("{}", help);
 
-        Ok(())
+        std::process::exit(exitcode::OK);
     }
 }

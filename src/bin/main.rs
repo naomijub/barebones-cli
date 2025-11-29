@@ -1,14 +1,12 @@
-use clap::Parser;
-use crossbeam_channel::select;
-
-use human_panic::{Metadata, setup_panic};
-
 use barebones::{
     commands::Cli,
     config::{get_settings as config_show, refresh as config_refresh},
     logger::{self, initialize_logger},
     plugin_loader::PluginManager,
 };
+use clap::Parser;
+use crossbeam_channel::select;
+use human_panic::{Metadata, setup_panic};
 
 fn main() -> anyhow::Result<()> {
     let command = Cli::parse();
@@ -36,11 +34,12 @@ fn main() -> anyhow::Result<()> {
             },
             default => {
                 match command.command {
-                    barebones::commands::Commands::Greeter => {
-                        manager.execute_plugin("greeter", vec!["Julia".to_string()])?;
+                    barebones::commands::Commands::Greeter(ref trailing_args) => {
+                        manager.execute_plugin("greeter", trailing_args.args.clone())?;
                     },
                     barebones::commands::Commands::List => manager.list_plugins(),
-                    barebones::commands::Commands::Wait => {
+                    barebones::commands::Commands::Show(ref name) => {
+                        manager.show_help(&name.plugin)?;
                         config_refresh()?
                     },
                 }

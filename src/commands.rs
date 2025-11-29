@@ -14,10 +14,22 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     /// Greeter Plugin
-    Greeter,
+    Greeter(Args),
 
     /// List Plugins
     List,
 
-    Wait,
+    Show(Helper),
+}
+
+#[derive(Debug, Parser)]
+pub struct Args {
+    #[arg(trailing_var_arg = true)]
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Parser)]
+pub struct Helper {
+    #[arg(value_name = "PLUGIN_NAME")]
+    pub plugin: String,
 }

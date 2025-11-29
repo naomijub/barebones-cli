@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use abi_stable::std_types::RString;
 use clap::Parser;
-
 use log::LevelFilter;
 
 use crate::{error::Error, plugin::PluginModRef};
@@ -25,8 +24,8 @@ pub struct LoggingConfig {
     )]
     pub verbose: bool,
 
-    /// Sets the log-level of the CLI. Defaults to 'Warn'.
-    #[arg(long, short, value_name = "LEVEL", value_parser = log_in_range, default_value_t = LevelFilter::Warn, global = true)]
+    /// Sets the log-level of the CLI. Defaults to 'Info'.
+    #[arg(long, short, value_name = "LEVEL", value_parser = log_in_range, default_value_t = LevelFilter::Info, global = true)]
     pub log_level: LevelFilter,
 }
 
@@ -35,7 +34,7 @@ impl Default for LoggingConfig {
         Self {
             quiet: false,
             verbose: false,
-            log_level: LevelFilter::Warn,
+            log_level: LevelFilter::Info,
         }
     }
 }

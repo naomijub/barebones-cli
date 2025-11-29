@@ -1,7 +1,8 @@
+use std::io::Write;
+
 use cli_dev::logging::LoggingConfig;
 use env_logger::Builder;
 use log::LevelFilter;
-use std::io::Write;
 
 use crate::APP_NAME;
 

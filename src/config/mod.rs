@@ -1,14 +1,17 @@
-use std::io::Write;
-use std::path::PathBuf;
-use std::sync::OnceLock;
-use std::sync::RwLock;
-use std::time::SystemTime;
+use std::{
+    io::Write,
+    path::PathBuf,
+    sync::{OnceLock, RwLock},
+    time::SystemTime,
+};
 
-use crate::APP_NAME;
-use crate::config::data::MyConfig;
-use crate::config::error::Error;
-use crate::logger::log_debug;
 use config::{Config, File};
+
+use crate::{
+    APP_NAME,
+    config::{data::MyConfig, error::Error},
+    logger::log_debug,
+};
 
 pub mod data;
 pub mod error;
