@@ -66,13 +66,13 @@ impl PluginManager {
 
             // Load .so on Linux, .dylib on macOS, .dll on Windows
             #[cfg(target_os = "linux")]
-            let is_plugin = path.extension().map_or(false, |e| e == "so");
+            let is_plugin = path.extension().is_some_and(|e| e == "so");
 
             #[cfg(target_os = "macos")]
             let is_plugin = path.extension().is_some_and(|e| e == "dylib");
 
             #[cfg(target_os = "windows")]
-            let is_plugin = path.extension().map_or(false, |e| e == "dll");
+            let is_plugin = path.extension().is_some_and(|e| e == "dll");
 
             let is_expected = settings.plugins.contains(
                 &path
