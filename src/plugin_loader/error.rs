@@ -10,4 +10,6 @@ pub enum Error {
     IO(#[from] std::io::Error),
     #[error("execution error")]
     Execution,
+    #[error("help function not implemented for plugin: {0}")]
+    HelpFn(String),
 }

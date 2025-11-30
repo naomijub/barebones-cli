@@ -4,7 +4,10 @@ use abi_stable::{
     sabi_extern_fn,
     std_types::{RString, RVec},
 };
-use cli_dev::plugin::{CommandResult, PluginInfo, PluginMod, PluginModRef};
+use cli_dev::{
+    logging::log_debug,
+    plugin::{CommandResult, PluginInfo, PluginMod, PluginModRef},
+};
 
 /// Export the plugin root module
 #[export_root_module]
@@ -31,6 +34,10 @@ pub fn get_info() -> PluginInfo {
 /// Execute the plugin command
 #[sabi_extern_fn]
 pub extern "C" fn execute(args: RVec<RString>) -> CommandResult {
+    log_debug(
+        get_plugin(),
+        format!("received arguments: {}", args.join(" ")),
+    );
     if args.is_empty() {
         return CommandResult::ok("Hello, World!");
     }

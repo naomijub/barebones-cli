@@ -1,6 +1,8 @@
 use semver::Version;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::logger::log_error;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct MyConfig {
     name: String,
@@ -42,6 +44,16 @@ impl Default for MyConfig {
             is_machine: false,
             version: Version::parse("1.0.0").unwrap(),
             plugins: Vec::new(),
+        }
+    }
+}
+
+impl MyConfig {
+    pub fn contains_plugins(&self, plugin: &String) {
+        let contains = self.plugins.contains(plugin);
+        if !contains {
+            log_error(format!("{} plugin not available", plugin));
+            std::process::exit(exitcode::UNAVAILABLE);
         }
     }
 }

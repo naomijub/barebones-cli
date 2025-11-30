@@ -1,0 +1,4 @@
+name = "Julia Naomi"
+is_machine = false
+version = "1.0.0"
+plugins = ["greeter"]

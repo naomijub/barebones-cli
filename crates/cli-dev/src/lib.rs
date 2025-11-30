@@ -3,8 +3,9 @@ pub mod logging;
 pub mod plugin;
 
 pub mod prelude {
-    pub use crate::logging::LoggingConfig;
-    pub use crate::plugin::*;
+    pub use exitcode;
+
+    pub use crate::{logging::LoggingConfig, plugin::*};
 }
 
 #[deprecated(note = "Use cli_dev::log_debug!() instead of log::debug!() directly")]
