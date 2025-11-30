@@ -1,8 +1,9 @@
 use barebones::{
     commands::Cli,
     config::{get_settings as config_show, refresh as config_refresh},
-    logger::{self, initialize_logger},
+    logger::{self, initialize_logger, log_error},
     plugin_loader::PluginManager,
+    updater::Updater,
 };
 use clap::Parser;
 use crossbeam_channel::select;
@@ -18,6 +19,17 @@ fn main() -> anyhow::Result<()> {
             .homepage("support.barebones-cli.corp")
             .support("- Open a support request by email to support@barebones-cli.corp")
     );
+    let updater = Updater::new(
+        "naomijub",      // GitHub username or org
+        "barebones-cli", // Repository name
+        "barebones-cli", // CLI name
+    );
+
+    if let Err(err) = updater.check_and_update(true) {
+        log_error(err.to_string());
+        return Err(anyhow::anyhow!("failed to auto-update"));
+    }
+
     let mut manager = PluginManager::new();
 
     let crtlc_rx = barebones::signaling::ctrl_c::ctrlc_channel()?;
@@ -45,6 +57,11 @@ fn main() -> anyhow::Result<()> {
                         manager.show_help(&name.plugin)?;
 
                     },
+                    barebones::commands::Commands::Version(ref version) => {
+                        if version.version {
+                            println!("version {}", self_update::cargo_crate_version!());
+                        }
+                    }
                 }
             }
         }

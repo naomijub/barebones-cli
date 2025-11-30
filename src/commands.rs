@@ -20,6 +20,9 @@ pub enum Commands {
     List,
 
     Show(Helper),
+
+    /// Version
+    Version(Version),
 }
 
 #[derive(Debug, Parser)]
@@ -32,4 +35,10 @@ pub struct Args {
 pub struct Helper {
     #[arg(value_name = "PLUGIN_NAME")]
     pub plugin: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct Version {
+    #[arg(short, long)]
+    pub version: bool,
 }

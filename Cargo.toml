@@ -30,6 +30,7 @@ log = "0.4"
 notify = "8"
 thiserror = "2"
 toml = "0.9.8"
+self_update = { version = "0.42", features = ["archive-tar", "compression-flate2"] }
 semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -49,12 +50,12 @@ exitcode.workspace = true
 log.workspace = true
 human-panic = "2" # Only executable should handle panic
 notify.workspace = true
+self_update.workspace = true
 semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 toml.workspace = true
-
 
 [dev-dependencies]
 assert_cmd = "2"
