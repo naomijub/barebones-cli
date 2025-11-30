@@ -29,18 +29,21 @@ fn main() -> anyhow::Result<()> {
 
     loop {
         select! {
+            // For tasks that loop or long running taks
             recv(crtlc_rx) -> ctrl => {
                 ctrl?.should_exit()
             },
             default => {
+                config_refresh()?;
                 match command.command {
                     barebones::commands::Commands::Greeter(ref trailing_args) => {
+                        settings.contains_plugins(&"greeter".to_string());
                         manager.execute_plugin("greeter", trailing_args.args.clone())?;
                     },
                     barebones::commands::Commands::List => manager.list_plugins(),
                     barebones::commands::Commands::Show(ref name) => {
                         manager.show_help(&name.plugin)?;
-                        config_refresh()?
+
                     },
                 }
             }

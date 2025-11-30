@@ -53,11 +53,11 @@ impl CommandResult {
         Self {
             success: true,
             output: output.into(),
-            exit_code: 0,
+            exit_code: exitcode::OK,
         }
     }
 
-    pub fn err(output: impl Into<RString>, exit_code: i32) -> Self {
+    pub fn err(output: impl Into<RString>, exit_code: exitcode::ExitCode) -> Self {
         Self {
             success: false,
             output: output.into(),

@@ -338,6 +338,7 @@ dependencies = [
  "abi_stable",
  "clap",
  "crossbeam-channel",
+ "exitcode",
  "log",
  "serde",
  "thiserror",

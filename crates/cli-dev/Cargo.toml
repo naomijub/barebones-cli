@@ -7,6 +7,7 @@ edition = "2024"
 abi_stable.workspace = true
 clap.workspace = true
 crossbeam-channel.workspace = true
+exitcode.workspace = true
 log.workspace = true
 serde.workspace = true
 thiserror.workspace = true
