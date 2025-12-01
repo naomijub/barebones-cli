@@ -41,6 +41,7 @@ cli-dev.workspace = true
 abi_stable.workspace = true
 anyhow = "1" # Executable dependency only
 clap.workspace = true
+colored = "3.0.0"
 config.workspace = true
 crossbeam-channel.workspace = true
 ctrlc.workspace = true

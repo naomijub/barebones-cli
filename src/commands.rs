@@ -38,7 +38,4 @@ pub struct Helper {
 }
 
 #[derive(Debug, Parser)]
-pub struct Version {
-    #[arg(short, long)]
-    pub version: bool,
-}
+pub struct Version {}

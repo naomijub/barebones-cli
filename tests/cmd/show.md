@@ -17,3 +17,11 @@ EXAMPLES:
 
 
 ```
+
+# Version
+
+```console
+$ barebones-cli version --quiet
+version 0.1.0
+
+```

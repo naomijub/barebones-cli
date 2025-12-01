@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use semver::Version;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -6,7 +8,7 @@ use crate::logger::log_error;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct MyConfig {
     name: String,
-    is_machine: bool,
+    pub is_machine: bool,
     #[serde(
         deserialize_with = "deserialize_version",
         serialize_with = "serialize_version"
@@ -45,6 +47,13 @@ impl Default for MyConfig {
             version: Version::parse("1.0.0").unwrap(),
             plugins: Vec::new(),
         }
+    }
+}
+
+impl Display for MyConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let toml_config = toml::to_string_pretty(&self).map_err(|_err| std::fmt::Error)?;
+        writeln!(f, "{toml_config}")
     }
 }
 

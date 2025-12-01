@@ -18,26 +18,29 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: barebones-cli
-            asset_name: barebones-cli-linux-amd64
+            asset_name: barebones_cli-linux-amd64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
             artifact_name: barebones-cli
-            asset_name: barebones-cli-linux-musl-amd64
+            asset_name: barebones_cli-linux-musl-amd64
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: barebones-cli
-            asset_name: barebones-cli-macos-amd64
+            asset_name: barebones_cli-macos-amd64
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: barebones-cli
-            asset_name: barebones-cli-macos-arm64
+            asset_name: barebones_cli-macos-arm64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: barebones-cli.exe
-            asset_name: barebones-cli-windows-amd64.exe
+            asset_name: barebones_cli-windows-amd64.exe
 
     steps:
       - uses: actions/checkout@v4
+      - name: Extract version from tag
+        id: vtag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -59,21 +62,21 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
+          tar czf ../../../${{ matrix.artifact_name }}_${{ steps.vtag.outputs.VERSION }}.tar.gz ${{ matrix.artifact_name }}
           cd -
       
       - name: Create zip (Windows)
         if: matrix.os == 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          7z a ../../../${{ matrix.asset_name }}.zip ${{ matrix.artifact_name }}
+          7z a ../../../${{ matrix.asset_name }}_${{ steps.vtag.outputs.VERSION }}.zip ${{ matrix.artifact_name }}
           cd -
       
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ matrix.asset_name }}.*
+            ${{ matrix.asset_name }}_${{ steps.vtag.outputs.VERSION }}.*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

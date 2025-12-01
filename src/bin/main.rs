@@ -1,7 +1,7 @@
 use barebones::{
     commands::Cli,
     config::{get_settings as config_show, refresh as config_refresh},
-    logger::{self, initialize_logger, log_error},
+    logger::initialize_logger,
     plugin_loader::PluginManager,
     updater::Updater,
 };
@@ -11,7 +11,9 @@ use human_panic::{Metadata, setup_panic};
 
 fn main() -> anyhow::Result<()> {
     let command = Cli::parse();
-    initialize_logger(&command.logging);
+    let settings = config_show()?;
+    initialize_logger(&command.logging, settings.is_machine);
+    log::debug!("{} - {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
     setup_panic!(
         Metadata::new(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
@@ -26,17 +28,16 @@ fn main() -> anyhow::Result<()> {
     );
 
     if let Err(err) = updater.check_and_update(true) {
-        log_error(err.to_string());
+        log::error!("{}", err);
         return Err(anyhow::anyhow!("failed to auto-update"));
     }
 
     let mut manager = PluginManager::new();
 
     let crtlc_rx = barebones::signaling::ctrl_c::ctrlc_channel()?;
-    let settings = config_show()?;
 
     if let Err(e) = manager.load_plugins_from_dir(&settings) {
-        logger::log_error(format!("Error loading plugins: {}", e));
+        log::error!("Error loading plugins: {}", e);
     }
 
     loop {
@@ -57,10 +58,9 @@ fn main() -> anyhow::Result<()> {
                         manager.show_help(&name.plugin)?;
 
                     },
-                    barebones::commands::Commands::Version(ref version) => {
-                        if version.version {
-                            println!("version {}", self_update::cargo_crate_version!());
-                        }
+                    barebones::commands::Commands::Version(_) => {
+                        println!("version {}", self_update::cargo_crate_version!());
+                        std::process::exit(exitcode::OK);
                     }
                 }
             }
