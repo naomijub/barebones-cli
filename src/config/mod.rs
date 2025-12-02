@@ -116,7 +116,5 @@ pub fn get_settings() -> Result<MyConfig, Error> {
         .map_err(|err| Error::LockPoison(err.to_string()))?
         .clone()
         .try_deserialize::<MyConfig>()?;
-    let toml_config = toml::to_string_pretty(&config).unwrap_or_default();
-    log_debug(format!(" * Settings: \n\x1b[31m{}\x1b[0m", toml_config));
     Ok(config)
 }

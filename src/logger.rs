@@ -1,22 +1,41 @@
 use std::io::Write;
 
 use cli_dev::logging::LoggingConfig;
+use colored::Colorize;
 use env_logger::Builder;
 use log::LevelFilter;
 
 use crate::APP_NAME;
 
-pub fn initialize_logger(config: &LoggingConfig) {
+pub fn initialize_logger(config: &LoggingConfig, is_machine: bool) {
     let mut builder = Builder::from_default_env();
-    builder.format(|buf, record| {
-        writeln!(
-            buf,
-            "[{}]: {} - {}",
-            record.level(),
-            record.target(),
-            record.args()
-        )
-    });
+    if is_machine {
+        builder.format(|buf, record| {
+            writeln!(
+                buf,
+                "[{}]: {} - {}",
+                record.level(),
+                record.target(),
+                record.args(),
+            )
+        });
+    } else {
+        builder.format(|buf, record| {
+            writeln!(
+                buf,
+                "{}: {} - {}",
+                match record.level() {
+                    log::Level::Error => "[ERROR]".red(),
+                    log::Level::Warn => "[WARN]".yellow(),
+                    log::Level::Info => "[INFO]".white(),
+                    log::Level::Debug => "[DEBUG]".green(),
+                    log::Level::Trace => "[TRACE]".blue(),
+                },
+                record.target().truecolor(160, 160, 160),
+                record.args().to_string().white()
+            )
+        });
+    }
 
     if config.verbose {
         builder.filter_level(LevelFilter::Trace);

@@ -1,4 +1,5 @@
 name = "Julia Naomi"
 is_machine = false
+should_auto_update = false
 version = "1.0.0"
 plugins = ["greeter"]

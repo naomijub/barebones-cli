@@ -49,8 +49,8 @@ impl Default for MyConfig {
         )]
         Self {
             name: "Julia Naomi".to_string(), // Not required
-            is_machine: false, // Not required
-            version: Version::parse("1.0.0").unwrap(), // Not requires
+            is_machine: false, // Required if you want clean output for other machines
+            version: Version::parse("1.0.0").unwrap(), // Not required
             plugins: vec![ // REQUIRED
                 "your_plugins_names" // <-- a list of your plugins
             ],
