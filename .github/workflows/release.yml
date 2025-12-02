@@ -8,6 +8,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Release
@@ -18,23 +21,19 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: barebones-cli
-            asset_name: barebones_cli-linux-amd64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            artifact_name: barebones-cli
-            asset_name: barebones_cli-linux-musl-amd64
+            asset_name: barebones-cli_linux-amd64
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: barebones-cli
-            asset_name: barebones_cli-macos-amd64
+            asset_name: barebones-cli_macos-amd64
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: barebones-cli
-            asset_name: barebones_cli-macos-arm64
+            asset_name: barebones-cli_macos-arm64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: barebones-cli.exe
-            asset_name: barebones_cli-windows-amd64.exe
+            asset_name: barebones-cli_windows-amd64.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -46,10 +45,41 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      # Linux: Install OpenSSL development packages
+      - name: Install OpenSSL (Linux GNU)
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
       
-      - name: Install musl-tools (Linux musl)
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      # macOS: OpenSSL is pre-installed, but might need pkg-config
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install openssl pkgconfig
+      
+      # Windows: Use vcpkg for OpenSSL
+      - name: Install OpenSSL (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          vcpkg integrate install
+          vcpkg install openssl:x64-windows-static
+        shell: pwsh
+      
+      # Windows: Set environment variables for OpenSSL
+      - name: Set OpenSSL environment (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "OPENSSL_DIR=C:/vcpkg/installed/x64-windows-static" >> $GITHUB_ENV
+          echo "OPENSSL_STATIC=1" >> $GITHUB_ENV
+        shell: bash
+      
+      # macOS: Set OpenSSL environment variables
+      - name: Set OpenSSL environment (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "OPENSSL_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
       
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
@@ -62,7 +92,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../${{ matrix.artifact_name }}_${{ steps.vtag.outputs.VERSION }}.tar.gz ${{ matrix.artifact_name }}
+          tar czf ../../../${{ matrix.asset_name }}_${{ steps.vtag.outputs.VERSION }}.tar.gz ${{ matrix.artifact_name }}
           cd -
       
       - name: Create zip (Windows)
@@ -73,7 +103,7 @@ jobs:
           cd -
       
       - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ matrix.asset_name }}_${{ steps.vtag.outputs.VERSION }}.*
