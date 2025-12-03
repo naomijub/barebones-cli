@@ -21,19 +21,19 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: barebones-cli
-            asset_name: barebones-cli_linux-amd64
+            asset_name: barebones-cli_linux_x86_64-unknown-linux-gnu
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: barebones-cli
-            asset_name: barebones-cli_macos-darwin
+            asset_name: barebones-cli_macos_x86_64-apple-darwin
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: barebones-cli
-            asset_name: barebones-cli_macos-arm64
+            asset_name: barebones-cli_macos_aarch64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: barebones-cli.exe
-            asset_name: barebones-cli_windows-amd64
+            asset_name: barebones-cli_windows_x86_64-pc-windows-msvc
 
     steps:
       - uses: actions/checkout@v4

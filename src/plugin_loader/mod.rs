@@ -4,7 +4,7 @@ use std::{fs, path::Path, str::FromStr};
 
 use abi_stable::{library::RootModule, std_types::RString};
 use cli_dev::{
-    logging::{log_debug, log_error, log_info},
+    logging::{log_debug, log_error},
     plugin::PluginModRef,
 };
 
@@ -36,7 +36,7 @@ impl PluginManager {
         let Some(info) = module.get_info().map(|f| f()) else {
             return Err(Error::NotFound(path.to_string_lossy().to_string()));
         };
-        log_info(module, format!("  Loaded: {} v{}", info.name, info.version));
+        log_debug(module, format!("  Loaded: {} v{}", info.name, info.version));
         log_debug(module, format!("  Description: {}", info.description));
         log_debug(module, format!("  Author: {}", info.author));
 
