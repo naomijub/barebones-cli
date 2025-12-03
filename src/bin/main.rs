@@ -33,7 +33,7 @@ fn main() -> anyhow::Result<()> {
             "barebones-cli", // CLI name
         );
 
-        if let Err(err) = updater.check_and_update(true) {
+        if let Err(err) = updater.check_and_update(true, command.logging.verbose) {
             log_error(err.to_string());
             return Err(anyhow::anyhow!("failed to auto-update"));
         }
