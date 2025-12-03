@@ -26,17 +26,17 @@ fn main() -> anyhow::Result<()> {
             .support("- Open a support request by email to support@barebones-cli.corp")
     );
 
-    if settings.should_auto_update {
-        let updater = Updater::new(
-            "naomijub",      // GitHub username or org
-            "barebones-cli", // Repository name
-            "barebones-cli", // CLI name
-        );
+    let updater = Updater::new(
+        "naomijub",      // GitHub username or org
+        "barebones-cli", // Repository name
+        "barebones-cli", // CLI name
+    );
 
-        if let Err(err) = updater.check_and_update(true, command.logging.verbose) {
-            log_error(err.to_string());
-            return Err(anyhow::anyhow!("failed to auto-update"));
-        }
+    if settings.should_auto_update
+        && let Err(err) = updater.check_and_update(command.accepter.accept, command.logging.verbose)
+    {
+        log_error(err.to_string());
+        return Err(anyhow::anyhow!("failed to auto-update"));
     }
 
     let mut manager = PluginManager::new();
@@ -67,6 +67,13 @@ fn main() -> anyhow::Result<()> {
                     },
                     barebones::commands::Commands::Version(_) => {
                         println!("version {}", self_update::cargo_crate_version!());
+                        std::process::exit(exitcode::OK);
+                    }
+                    barebones::commands::Commands::Update => {
+                        if let Err(err) = updater.check_and_update(command.accepter.accept, command.logging.verbose) {
+                            log_error(err.to_string());
+                            return Err(anyhow::anyhow!("failed to auto-update"));
+                        }
                         std::process::exit(exitcode::OK);
                     }
                 }

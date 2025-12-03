@@ -10,6 +10,7 @@ A CLI template repository to build extensible plugin based CLI applications in R
 - **Type Safety**: Leverages `abi_stable` types for safe  rust-to-rust FFI.
 - **Simple Interface**: Clean three-function contract for plugin development.
 - **Cross-Platform**: Linux, macOS, Windows
+- **Self-Updating Binary**: Binary checks for update on every execution.
 
 ## Quick Start
 
@@ -37,6 +38,8 @@ setup_panic!(
         .support("- Open a support request by email to support@barebones-cli.corp")
 );
 ```
+
+- `APP_NAME` constant in `src/lib.rs`.
 
 - You might need to configure your own Settings Default in `src/config/data.rs`
 
@@ -402,6 +405,10 @@ fn load_plugin(&mut self, path: &PathBuf) -> Result<(), Box<dyn std::error::Erro
 6. **Distribution**: You can distribute plugins as separate packages that users install to their plugins directory.
 
 ## Troubleshooting
+
+### Disabling Auto-Update
+
+To disable auto-update, open `$HOME/.barebones/config.toml` and set `should_auto_update = false`. To run manually run the update command execute `barebones-cli update`. To auto accept downloads use the `--accept` flag `barebones-cli --accept update`
 
 ### Plugin Not Loading
 
