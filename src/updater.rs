@@ -3,7 +3,10 @@ use std::error::Error;
 use self_update::{cargo_crate_version, update::Release};
 use semver::Version;
 
-use crate::logger::{log_debug, log_info, log_trace, log_warn};
+use crate::{
+    APP_NAME,
+    logger::{log_debug, log_info, log_trace, log_warn},
+};
 
 const DEFAULT_VERSION: Version = Version::new(0, 0, 0);
 
@@ -85,7 +88,10 @@ impl Updater {
                 log_info(format!("Update done. Version {}", result));
                 log_info("Please restart the application to use the new version.");
             } else {
-                log_warn("Run 'barebones-cli update' to install the latest version.");
+                log_warn(format!(
+                    "Run '{} update' to install the latest version.",
+                    APP_NAME
+                ));
             }
         };
         Ok(())

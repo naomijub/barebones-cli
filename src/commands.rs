@@ -7,6 +7,9 @@ pub struct Cli {
     #[clap(flatten)]
     pub logging: LoggingConfig,
 
+    #[clap(flatten)]
+    pub accepter: GithubAccepter,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -23,6 +26,9 @@ pub enum Commands {
 
     /// Version
     Version(Version),
+
+    /// Manually update CLI
+    Update,
 }
 
 #[derive(Debug, Parser)]
@@ -39,3 +45,10 @@ pub struct Helper {
 
 #[derive(Debug, Parser)]
 pub struct Version {}
+
+#[derive(Parser, Debug)]
+pub struct GithubAccepter {
+    /// Should auto accept download request
+    #[arg(long, default_value_t = false)]
+    pub accept: bool,
+}

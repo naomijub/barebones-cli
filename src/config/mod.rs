@@ -18,22 +18,6 @@ pub mod error;
 
 static LAST_MODIFIED: OnceLock<RwLock<SystemTime>> = OnceLock::new();
 
-#[cfg(target_os = "windows")]
-pub fn executable_location() -> PathBuf {
-    dirs::home_dir()
-        .expect("System should contain home dir")
-        .join(format!(".{APP_NAME}"))
-        .join("barebones-cli.exe")
-}
-
-#[cfg(not(target_os = "windows"))]
-pub fn executable_location() -> PathBuf {
-    dirs::home_dir()
-        .expect("System should contain home dir")
-        .join(format!(".{APP_NAME}"))
-        .join("barebones-cli")
-}
-
 pub fn config_dir() -> PathBuf {
     dirs::home_dir()
         .expect("System should contain home dir")
