@@ -2,11 +2,9 @@ use std::error::Error;
 
 use self_update::{cargo_crate_version, update::Release};
 use semver::Version;
+use tracing::{debug, info, warn};
 
-use crate::{
-    APP_NAME,
-    logger::{log_debug, log_info, log_trace, log_warn},
-};
+use crate::APP_NAME;
 
 const DEFAULT_VERSION: Version = Version::new(0, 0, 0);
 
@@ -40,7 +38,7 @@ impl Updater {
                 .unwrap_or(DEFAULT_VERSION)
                 .cmp(&Version::parse(&a.version).unwrap_or(DEFAULT_VERSION))
         });
-        log_debug("Available releases:");
+        debug!("Available releases:");
         debug_releases(&releases);
 
         if let Some(latest) = releases.first() {
@@ -49,7 +47,7 @@ impl Updater {
             let latest_semver = semver::Version::parse(latest_version)?;
 
             if latest_semver > current {
-                log_trace(format!("Latest Version: {}", latest_semver));
+                debug!("Latest Version: {}", latest_semver);
                 return Ok(Some(latest.version.clone()));
             }
         }
@@ -59,7 +57,7 @@ impl Updater {
 
     /// Perform the update
     pub fn update(&self, verbose: bool) -> Result<Version, Box<dyn Error>> {
-        log_debug("Retrieving update");
+        debug!("Retrieving update");
 
         let status = self_update::backends::github::Update::configure()
             .repo_owner(&self.repo_owner)
@@ -77,21 +75,18 @@ impl Updater {
     /// Check and update if newer version exists
     pub fn check_and_update(&self, auto: bool, verbose: bool) -> Result<(), Box<dyn Error>> {
         if let Some(new_version) = self.check_for_latest()? {
-            log_warn(format!(
+            warn!(
                 "New version available: {} (current: {})",
                 new_version, self.current_version
-            ));
+            );
 
             if auto {
-                log_info("Automatically updating...");
+                info!("Automatically updating...");
                 let result = self.update(verbose)?;
-                log_info(format!("Update done. Version {}", result));
-                log_info("Please restart the application to use the new version.");
+                info!("Update done. Version {}", result);
+                info!("Please restart the application to use the new version.");
             } else {
-                log_warn(format!(
-                    "Run '{} update' to install the latest version.",
-                    APP_NAME
-                ));
+                warn!("Run '{} update' to install the latest version.", APP_NAME);
             }
         };
         Ok(())
@@ -105,10 +100,9 @@ fn debug_releases(releases: &[Release]) {
             .iter()
             .map(|asset| (&release.version, &release.date, asset))
     }) {
-        let debugger = format!(
+        debug!(
             "{} v{}#{} URL: {}",
             asset.name, version, date, asset.download_url
         );
-        log_debug(debugger);
     }
 }

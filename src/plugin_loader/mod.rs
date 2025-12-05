@@ -1,14 +1,12 @@
 pub mod error;
 
-use std::{fs, path::Path, str::FromStr};
+use std::{fs, path::Path};
 
-use abi_stable::{library::RootModule, std_types::RString};
-use cli_dev::{
-    logging::{log_debug, log_error},
-    plugin::PluginModRef,
-};
+use abi_stable::library::RootModule;
+use cli_dev::plugin::PluginModRef;
+use tracing::{debug, error, info, warn};
 
-use crate::{config::data::MyConfig, logger::log_warn, plugin_loader::error::Error};
+use crate::{APP_NAME, config::data::MyConfig, plugin_loader::error::Error};
 
 pub struct PluginManager {
     plugins: Vec<LoadedPlugin>,
@@ -28,7 +26,7 @@ impl PluginManager {
     }
 
     fn load_plugin(&mut self, path: &Path) -> Result<(), Error> {
-        crate::logger::log_debug(format!("Loading plugin from: {}", path.display()));
+        debug!(target: APP_NAME, "Loading plugin from: {}", path.display());
 
         let module =
             PluginModRef::load_from_file(path).map_err(|er| Error::Load(er.to_string()))?;
@@ -36,9 +34,9 @@ impl PluginManager {
         let Some(info) = module.get_info().map(|f| f()) else {
             return Err(Error::NotFound(path.to_string_lossy().to_string()));
         };
-        log_debug(module, format!("  Loaded: {} v{}", info.name, info.version));
-        log_debug(module, format!("  Description: {}", info.description));
-        log_debug(module, format!("  Author: {}", info.author));
+        debug!(target: APP_NAME, "  Loaded: {} v{}", info.name, info.version);
+        debug!(target: APP_NAME, "  Description: {}", info.description);
+        debug!(target: APP_NAME, "  Author: {}", info.author);
 
         self.plugins.push(LoadedPlugin {
             name: info.name.to_string(),
@@ -52,10 +50,10 @@ impl PluginManager {
         let plugin_dir = crate::config::config_dir();
 
         if !plugin_dir.exists() {
-            crate::logger::log_error(format!(
+            error!(target: APP_NAME,
                 "Plugin directory '{}' does not exist",
                 plugin_dir.to_string_lossy()
-            ));
+            );
             return Ok(());
         }
 
@@ -93,7 +91,7 @@ impl PluginManager {
                 && is_expected
                 && let Err(e) = self.load_plugin(&path)
             {
-                crate::logger::log_error(format!("Error loading plugin {}: {}", path.display(), e));
+                error!(target: APP_NAME, "Error loading plugin {}: {}", path.display(), e);
             }
         }
 
@@ -110,13 +108,20 @@ impl PluginManager {
         let args_rvec: abi_stable::std_types::RVec<_> =
             args.into_iter().map(|s| s.into()).collect();
 
+        let plugin_name = plugin
+            .module
+            .get_info()
+            .map(|f| f().name)
+            .ok_or_else(|| Error::PluginInterface(name.to_string(), "get_info".to_string()))?;
+
         let Some(result) = (plugin.module.execute()).map(|f| f(args_rvec.clone())) else {
-            log_error(
-                plugin.module,
-                format!(
-                    "failed to execute plugin with args: `{}`",
-                    args_rvec.join(",")
-                ),
+            error!(
+                target: APP_NAME,
+
+                "failed to execute plugin {} with args: `{}`",
+                plugin_name,
+                args_rvec.join(",")
+
             );
             return Err(Error::Execution);
         };
@@ -124,14 +129,14 @@ impl PluginManager {
         if !result.success {
             let binding = (plugin.module.get_info())
                 .map(|f| f().name)
-                .unwrap_or_else(|| RString::from_str("UNKNOWN").unwrap());
+                .ok_or_else(|| Error::PluginInterface(name.to_string(), "get_info".to_string()))?;
             let name = binding.as_str();
             eprintln!("{}: {}", name, result.output);
             std::process::exit(result.exit_code);
         } else {
             let binding = (plugin.module.get_info())
                 .map(|f| f().name)
-                .unwrap_or_else(|| RString::from_str("UNKNOWN").unwrap());
+                .ok_or_else(|| Error::PluginInterface(name.to_string(), "get_info".to_string()))?;
             let name = binding.as_str();
             println!("{}: {}", name, result.output);
             std::process::exit(exitcode::OK);
@@ -140,17 +145,20 @@ impl PluginManager {
 
     pub fn list_plugins(&self) {
         if self.plugins.is_empty() {
-            log_warn("No plugins loaded");
+            warn!(target: APP_NAME, "No plugins loaded");
             return;
         }
 
-        crate::logger::log_info("Available plugins:");
+        info!(target: APP_NAME, "Available plugins:");
         for plugin in &self.plugins {
-            let info = (plugin.module.get_info()).unwrap()();
-            crate::logger::log_info(format!(
+            let Some(info) = plugin.module.get_info().map(|f| f()) else {
+                error!(target: APP_NAME, "loaded UNKNOWN plugin interface incomplete: get_info");
+                std::process::exit(exitcode::UNAVAILABLE);
+            };
+            info!(target: APP_NAME,
                 "  {} (v{}): {}",
                 info.name, info.version, info.description
-            ));
+            );
         }
         std::process::exit(exitcode::OK);
     }

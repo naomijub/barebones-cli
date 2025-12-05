@@ -1,68 +1,25 @@
-use std::io::Write;
-
 use cli_dev::logging::LoggingConfig;
-use colored::Colorize;
-use env_logger::Builder;
-use log::LevelFilter;
-
-use crate::APP_NAME;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::fmt;
 
 pub fn initialize_logger(config: &LoggingConfig, is_machine: bool) {
-    let mut builder = Builder::from_default_env();
-    if is_machine {
-        builder.format(|buf, record| {
-            writeln!(
-                buf,
-                "[{}]: {} - {}",
-                record.level(),
-                record.target(),
-                record.args(),
-            )
-        });
-    } else {
-        builder.format(|buf, record| {
-            writeln!(
-                buf,
-                "{}: {} - {}",
-                match record.level() {
-                    log::Level::Error => "[ERROR]".red(),
-                    log::Level::Warn => "[WARN]".yellow(),
-                    log::Level::Info => "[INFO]".white(),
-                    log::Level::Debug => "[DEBUG]".green(),
-                    log::Level::Trace => "[TRACE]".blue(),
-                },
-                record.target().truecolor(160, 160, 160),
-                record.args().to_string().white()
-            )
-        });
-    }
+    let format = fmt::format()
+        .with_level(true)
+        .with_target(true)
+        .with_thread_ids(false)
+        .with_thread_names(false)
+        .with_ansi(!is_machine)
+        .with_source_location(false)
+        .without_time()
+        .compact();
+    let mut subscriber = tracing_subscriber::fmt().event_format(format);
 
     if config.verbose {
-        builder.filter_level(LevelFilter::Trace);
+        subscriber = subscriber.with_max_level(LevelFilter::TRACE);
     } else if config.quiet {
-        builder.filter_level(LevelFilter::Error);
+        subscriber = subscriber.with_max_level(LevelFilter::ERROR);
     } else {
-        builder.filter_level(config.log_level);
+        subscriber = subscriber.with_max_level(config.log_level);
     }
-    builder.init();
-}
-
-pub fn log_error(message: impl Into<String>) {
-    log::error!(target: APP_NAME, "{}", message.into());
-}
-
-pub fn log_warn(message: impl Into<String>) {
-    log::warn!(target: APP_NAME, "{}", message.into());
-}
-
-pub fn log_info(message: impl Into<String>) {
-    log::info!(target: APP_NAME, "{}", message.into());
-}
-
-pub fn log_debug(message: impl Into<String>) {
-    log::debug!(target: APP_NAME, "{}", message.into());
-}
-
-pub fn log_trace(message: impl Into<String>) {
-    log::trace!(target: APP_NAME, "{}", message.into());
+    subscriber.init();
 }

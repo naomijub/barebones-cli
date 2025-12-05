@@ -2,7 +2,7 @@
 
 ```console
 $ barebones-cli list
-[INFO]: barebones - Available plugins:
-[INFO]: barebones -   greeter (v0.1.0): A simple greeter plugin
+[32m INFO[0m [2mbarebones[0m[2m:[0m Available plugins:
+[32m INFO[0m [2mbarebones[0m[2m:[0m   greeter (v0.1.0): A simple greeter plugin
 
 ```

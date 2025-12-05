@@ -12,4 +12,6 @@ pub enum Error {
     Execution,
     #[error("help function not implemented for plugin: {0}")]
     HelpFn(String),
+    #[error("loaded plugin {0} interface incomplete: {1}")]
+    PluginInterface(String, String),
 }

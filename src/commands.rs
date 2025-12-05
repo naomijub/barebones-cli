@@ -19,12 +19,13 @@ pub enum Commands {
     /// Greeter Plugin
     Greeter(Args),
 
-    /// List Plugins
+    /// List all plugins
     List,
 
+    /// Show plugin helper
     Show(Helper),
 
-    /// Version
+    /// CLI version
     Version(Version),
 
     /// Manually update CLI
@@ -39,6 +40,7 @@ pub struct Args {
 
 #[derive(Debug, Parser)]
 pub struct Helper {
+    /// Which plugin to show helper info
     #[arg(value_name = "PLUGIN_NAME")]
     pub plugin: String,
 }
@@ -48,7 +50,7 @@ pub struct Version {}
 
 #[derive(Parser, Debug)]
 pub struct GithubAccepter {
-    /// Should auto accept download request
+    /// Should auto accept self update download requests
     #[arg(long, default_value_t = false)]
     pub accept: bool,
 }

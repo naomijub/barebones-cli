@@ -1,23 +1,26 @@
 use barebones::{
+    APP_NAME,
     commands::Cli,
     config::{get_settings as config_show, refresh as config_refresh},
-    logger::{initialize_logger, log_debug, log_error},
+    logger::initialize_logger,
     plugin_loader::PluginManager,
     updater::Updater,
 };
 use clap::Parser;
 use crossbeam_channel::select;
 use human_panic::{Metadata, setup_panic};
+use tracing::{debug, error};
 
 fn main() -> anyhow::Result<()> {
     let command = Cli::parse();
     let settings = config_show()?;
     initialize_logger(&command.logging, settings.is_machine);
-    log_debug(format!(
+    debug!(
+        target: APP_NAME,
         "{} - {}",
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
-    ));
+    );
 
     setup_panic!(
         Metadata::new(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
@@ -35,7 +38,7 @@ fn main() -> anyhow::Result<()> {
     if settings.should_auto_update
         && let Err(err) = updater.check_and_update(command.accepter.accept, command.logging.verbose)
     {
-        log_error(err.to_string());
+        error!(target: APP_NAME, "{}", err);
         return Err(anyhow::anyhow!("failed to auto-update"));
     }
 
@@ -44,7 +47,7 @@ fn main() -> anyhow::Result<()> {
     let crtlc_rx = barebones::signaling::ctrl_c::ctrlc_channel()?;
 
     if let Err(e) = manager.load_plugins_from_dir(&settings) {
-        log_error(format!("Error loading plugins: {}", e));
+        error!(target: APP_NAME, "Error loading plugins: {}", e);
     }
 
     loop {
@@ -71,7 +74,7 @@ fn main() -> anyhow::Result<()> {
                     }
                     barebones::commands::Commands::Update => {
                         if let Err(err) = updater.check_and_update(command.accepter.accept, command.logging.verbose) {
-                            log_error(err.to_string());
+                            error!(target: APP_NAME, "{}", err);
                             return Err(anyhow::anyhow!("failed to auto-update"));
                         }
                         std::process::exit(exitcode::OK);

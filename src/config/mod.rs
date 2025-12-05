@@ -5,12 +5,13 @@ use std::{
     time::SystemTime,
 };
 
+use chrono::{DateTime, Utc};
 use config::{Config, File};
+use tracing::debug;
 
 use crate::{
     APP_NAME,
     config::{data::MyConfig, error::Error},
-    logger::log_debug,
 };
 
 pub mod data;
@@ -46,6 +47,7 @@ pub fn refresh() -> Result<(), Error> {
         std::fs::metadata(config_path)?.modified(),
         LAST_MODIFIED.get_or_init(|| RwLock::new(SystemTime::now())),
     ) {
+        let datetime_utc: DateTime<Utc> = time.into();
         let mut should_update = false;
         if let Ok(old) = old.read()
             && *old != time
@@ -53,12 +55,13 @@ pub fn refresh() -> Result<(), Error> {
             should_update = true;
         }
         if should_update && let Ok(mut old) = old.write() {
+            debug!(target: APP_NAME, "setttings last modified at `{}`", datetime_utc.to_rfc3339());
             *old = time;
             let new_config = load()?;
-            log_debug(format!(
-                "Updated Config: {}",
+            debug!(target: APP_NAME,
+                "Updated Config: \n{}",
                 toml::to_string_pretty(&new_config.clone().try_deserialize::<MyConfig>()?)?
-            ));
+            );
             *settings()
                 .write()
                 .map_err(|err| Error::LockPoison(err.to_string()))? = new_config;

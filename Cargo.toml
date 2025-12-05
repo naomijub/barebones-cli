@@ -34,6 +34,7 @@ self_update = { version = "0.42",  default-features = false, features = ["rustls
 semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tracing = "0.1"
 
 
 [dependencies]
@@ -41,15 +42,13 @@ cli-dev.workspace = true
 
 abi_stable.workspace = true
 anyhow = "1" # Executable dependency only
+chrono = "0.4"
 clap.workspace = true
-colored = "3.0.0"
 config.workspace = true
 crossbeam-channel.workspace = true
 ctrlc.workspace = true
 dirs.workspace = true
-env_logger = "0.11" # This should not be responsibility of any crate
 exitcode.workspace = true
-log.workspace = true
 human-panic = "2" # Only executable should handle panic
 notify.workspace = true
 self_update.workspace = true
@@ -58,6 +57,8 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 toml.workspace = true
+tracing.workspace = true
+tracing-subscriber = "0.3" # This should not be responsibility of any crate
 
 [dev-dependencies]
 assert_cmd = "2"
