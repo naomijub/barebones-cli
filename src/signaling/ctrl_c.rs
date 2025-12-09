@@ -1,13 +1,15 @@
 use std::process;
 
 use crossbeam_channel::{Receiver, unbounded};
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
 use crate::APP_NAME;
 
+#[derive(Debug)]
 pub struct CrtlCShouldExit(bool);
 
 impl CrtlCShouldExit {
+    #[instrument]
     pub fn should_exit(&self) {
         if self.0 {
             info!(target: APP_NAME, "crtl+c Signal received");
@@ -16,6 +18,7 @@ impl CrtlCShouldExit {
     }
 }
 
+#[instrument]
 pub fn ctrlc_channel() -> Result<Receiver<CrtlCShouldExit>, ctrlc::Error> {
     let (crtlc_tx, crtlc_rx) = unbounded();
     ctrlc::set_handler(move || {

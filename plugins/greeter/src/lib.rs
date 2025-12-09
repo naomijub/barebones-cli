@@ -10,6 +10,7 @@ use cli_dev::{
     plugin::{CommandResult, PluginInfo, PluginMod, PluginModRef},
     prelude::exitcode,
 };
+use tracing::instrument;
 
 use crate::commands::Args;
 
@@ -19,6 +20,7 @@ pub const PLUGIN_NAME: RStr<'static> = RStr::from_str(TARGET_NAME);
 
 /// Export the plugin root module
 #[export_root_module]
+#[instrument]
 pub fn get_plugin() -> PluginModRef {
     PluginMod {
         get_info,
@@ -30,6 +32,7 @@ pub fn get_plugin() -> PluginModRef {
 
 /// Return plugin metadata
 #[sabi_extern_fn]
+#[instrument]
 pub fn get_info() -> PluginInfo {
     PluginInfo {
         name: "greeter".into(),
@@ -41,6 +44,7 @@ pub fn get_info() -> PluginInfo {
 
 /// Execute the plugin command
 #[sabi_extern_fn]
+#[instrument]
 pub extern "C" fn execute(args: RVec<RString>) -> CommandResult {
     debug!(
         target: TARGET_NAME,
@@ -67,6 +71,7 @@ pub extern "C" fn execute(args: RVec<RString>) -> CommandResult {
 
 /// Return help text
 #[sabi_extern_fn]
+#[instrument]
 pub fn get_help() -> RString {
     r#"greeter - A simple greeting plugin
 

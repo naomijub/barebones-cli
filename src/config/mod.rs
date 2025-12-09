@@ -7,7 +7,8 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use config::{Config, File};
-use tracing::debug;
+use opentelemetry::global;
+use tracing::{debug, instrument};
 
 use crate::{
     APP_NAME,
@@ -32,6 +33,7 @@ pub fn config_location() -> PathBuf {
         .join("config.toml")
 }
 
+#[instrument]
 fn settings() -> &'static RwLock<Config> {
     static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
     CONFIG.get_or_init(|| {
@@ -41,6 +43,7 @@ fn settings() -> &'static RwLock<Config> {
     })
 }
 
+#[instrument]
 pub fn refresh() -> Result<(), Error> {
     let config_path = config_location();
     if let (Ok(time), old) = (
@@ -71,6 +74,7 @@ pub fn refresh() -> Result<(), Error> {
     Ok(())
 }
 
+#[instrument]
 fn load() -> Result<Config, Error> {
     let config_path = config_location();
     create_config(&config_path)?;
@@ -80,6 +84,7 @@ fn load() -> Result<Config, Error> {
         .build()?)
 }
 
+#[instrument]
 fn create_config(config_path: &PathBuf) -> Result<(), Error> {
     if !std::fs::exists(config_path).unwrap_or_default() {
         std::fs::create_dir_all(config_dir())?;
@@ -97,11 +102,20 @@ fn create_config(config_path: &PathBuf) -> Result<(), Error> {
     Ok(())
 }
 
+#[instrument]
 pub fn get_settings() -> Result<MyConfig, Error> {
     let config = settings()
         .read()
         .map_err(|err| Error::LockPoison(err.to_string()))?
         .clone()
         .try_deserialize::<MyConfig>()?;
+    let meter = global::meter("plugins-expected");
+    let request_counter = meter
+        .u64_counter("app.expected_plugins")
+        .with_description("total expected plugins")
+        .with_unit("count")
+        .build();
+
+    request_counter.add(config.plugins.len() as u64, &[]);
     Ok(config)
 }

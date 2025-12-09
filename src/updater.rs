@@ -1,10 +1,11 @@
 use std::error::Error;
 
+use opentelemetry::KeyValue;
 use self_update::{cargo_crate_version, update::Release};
 use semver::Version;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, instrument, warn};
 
-use crate::APP_NAME;
+use crate::{APP_NAME, updater::metric::SELF_UPDATE_METRIC};
 
 const DEFAULT_VERSION: Version = Version::new(0, 0, 0);
 
@@ -17,6 +18,7 @@ pub struct Updater {
 }
 
 impl Updater {
+    #[instrument]
     pub fn new(repo_owner: &str, repo_name: &str, bin_name: &str) -> Self {
         Self {
             current_version: cargo_crate_version!().to_string(),
@@ -26,6 +28,7 @@ impl Updater {
         }
     }
 
+    #[instrument]
     /// Checks if there is a newer version available
     pub fn check_for_latest(&self) -> Result<Option<String>, Box<dyn Error>> {
         let mut releases = self_update::backends::github::ReleaseList::configure()
@@ -55,6 +58,7 @@ impl Updater {
         Ok(None)
     }
 
+    #[instrument]
     /// Perform the update
     pub fn update(&self, verbose: bool) -> Result<Version, Box<dyn Error>> {
         debug!("Retrieving update");
@@ -66,15 +70,34 @@ impl Updater {
             .show_download_progress(true)
             .show_output(verbose)
             .current_version(cargo_crate_version!())
-            .build()?
-            .update()?;
+            .build()
+            .inspect_err(|_err| {
+                SELF_UPDATE_METRIC.record(&[
+                    KeyValue::new("execution", "FAIL"),
+                    KeyValue::new("step", "BUILD"),
+                ])
+            })?
+            .update()
+            .inspect_err(|_err| {
+                SELF_UPDATE_METRIC.record(&[
+                    KeyValue::new("execution", "FAIL"),
+                    KeyValue::new("step", "UPDATE"),
+                ])
+            })?;
 
         Ok(Version::parse(status.version())?)
     }
 
+    #[instrument]
     /// Check and update if newer version exists
     pub fn check_and_update(&self, auto: bool, verbose: bool) -> Result<(), Box<dyn Error>> {
-        if let Some(new_version) = self.check_for_latest()? {
+        let start = &*SELF_UPDATE_METRIC;
+        if let Some(new_version) = self.check_for_latest().inspect_err(|_err| {
+            SELF_UPDATE_METRIC.record(&[
+                KeyValue::new("execution", "FAIL"),
+                KeyValue::new("step", "CHECK_LATEST"),
+            ])
+        })? {
             warn!(
                 "New version available: {} (current: {})",
                 new_version, self.current_version
@@ -89,6 +112,7 @@ impl Updater {
                 warn!("Run '{} update' to install the latest version.", APP_NAME);
             }
         };
+        start.record(&[KeyValue::new("execution", "OK")]);
         Ok(())
     }
 }
@@ -105,4 +129,43 @@ fn debug_releases(releases: &[Release]) {
             asset.name, version, date, asset.download_url
         );
     }
+}
+
+// METRICS
+pub mod metric {
+    use std::{sync::LazyLock, time::Instant};
+
+    use opentelemetry::{KeyValue, global};
+
+    pub struct SelfUpdateMetric {
+        duration: opentelemetry::metrics::Histogram<f64>,
+        time: Instant,
+    }
+
+    impl SelfUpdateMetric {
+        fn new(duration: opentelemetry::metrics::Histogram<f64>) -> Self {
+            Self {
+                duration,
+                time: Instant::now(),
+            }
+        }
+
+        pub fn record(&self, attributes: &[KeyValue]) {
+            let time = self.time.elapsed();
+            self.duration.record(time.as_secs_f64(), attributes);
+        }
+    }
+
+    fn self_update_metric() -> SelfUpdateMetric {
+        let meter = global::meter("updater-self-update");
+        // Histogram: Track update duration distribution
+        let duration = meter
+            .f64_histogram("self_update_duration_time")
+            .with_description("CLI self update duration in seconds")
+            .with_unit("s")
+            .build();
+        SelfUpdateMetric::new(duration)
+    }
+
+    pub static SELF_UPDATE_METRIC: LazyLock<SelfUpdateMetric> = LazyLock::new(self_update_metric);
 }

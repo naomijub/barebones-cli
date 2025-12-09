@@ -2,7 +2,11 @@ use cli_dev::logging::LoggingConfig;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt;
 
-pub fn initialize_logger(config: &LoggingConfig, is_machine: bool) {
+pub fn initialize_logger(
+    config: &LoggingConfig,
+    is_machine: bool,
+) -> fmt::SubscriberBuilder<fmt::format::DefaultFields, fmt::format::Format<fmt::format::Compact, ()>>
+{
     let format = fmt::format()
         .with_level(true)
         .with_target(true)
@@ -13,7 +17,6 @@ pub fn initialize_logger(config: &LoggingConfig, is_machine: bool) {
         .without_time()
         .compact();
     let mut subscriber = tracing_subscriber::fmt().event_format(format);
-
     if config.verbose {
         subscriber = subscriber.with_max_level(LevelFilter::TRACE);
     } else if config.quiet {
@@ -21,5 +24,5 @@ pub fn initialize_logger(config: &LoggingConfig, is_machine: bool) {
     } else {
         subscriber = subscriber.with_max_level(config.log_level);
     }
-    subscriber.init();
+    subscriber
 }
