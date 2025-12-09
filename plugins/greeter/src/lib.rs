@@ -2,15 +2,25 @@ use abi_stable::{
     export_root_module,
     prefix_type::PrefixTypeTrait,
     sabi_extern_fn,
-    std_types::{RString, RVec},
+    std_types::{RStr, RString, RVec},
 };
+use clap::Parser;
 use cli_dev::{
-    logging::log_debug,
+    logging::debug,
     plugin::{CommandResult, PluginInfo, PluginMod, PluginModRef},
+    prelude::exitcode,
 };
+use tracing::instrument;
+
+use crate::commands::Args;
+
+mod commands;
+const TARGET_NAME: &str = "greeter";
+pub const PLUGIN_NAME: RStr<'static> = RStr::from_str(TARGET_NAME);
 
 /// Export the plugin root module
 #[export_root_module]
+#[instrument]
 pub fn get_plugin() -> PluginModRef {
     PluginMod {
         get_info,
@@ -22,6 +32,7 @@ pub fn get_plugin() -> PluginModRef {
 
 /// Return plugin metadata
 #[sabi_extern_fn]
+#[instrument]
 pub fn get_info() -> PluginInfo {
     PluginInfo {
         name: "greeter".into(),
@@ -33,31 +44,34 @@ pub fn get_info() -> PluginInfo {
 
 /// Execute the plugin command
 #[sabi_extern_fn]
+#[instrument]
 pub extern "C" fn execute(args: RVec<RString>) -> CommandResult {
-    log_debug(
-        get_plugin(),
-        format!("received arguments: {}", args.join(" ")),
+    debug!(
+        target: TARGET_NAME,
+        "received arguments: {}", args.join(" "),
     );
     if args.is_empty() {
         return CommandResult::ok("Hello, World!");
     }
 
-    // Check for flags
-    if args[0].as_str() == "--uppercase" {
-        if args.len() < 2 {
-            return CommandResult::err("--uppercase requires a name argument", 1);
-        }
-        let name = args[1].as_str();
-        return CommandResult::ok(format!("HELLO, {}!", name.to_uppercase()));
-    }
+    let args = args.iter().map(|arg| arg.to_string());
+    let args = Args::parse_from(args);
 
-    // Just say hello to the provided name
-    let name = args[0].as_str();
-    CommandResult::ok(format!("Hello, {}!", name))
+    if let Some(name) = args.name {
+        CommandResult::ok(format!("Hello, {}!", name))
+    } else if let Some(uppercase) = args.uppercase {
+        CommandResult::ok(format!("HELLO, {}!", uppercase.to_uppercase()))
+    } else {
+        CommandResult::err(
+            "`NAME` or `--uppercase UPPERCASE_NAME` are required",
+            exitcode::USAGE,
+        )
+    }
 }
 
 /// Return help text
 #[sabi_extern_fn]
+#[instrument]
 pub fn get_help() -> RString {
     r#"greeter - A simple greeting plugin
 

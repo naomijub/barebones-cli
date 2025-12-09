@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use abi_stable::{
     StableAbi,
     library::RootModule,
@@ -5,6 +7,7 @@ use abi_stable::{
     sabi_types::VersionStrings,
     std_types::{RString, RVec},
 };
+use tracing::instrument;
 
 /// The root module that plugins must export
 #[repr(C)]
@@ -49,7 +52,8 @@ pub struct CommandResult {
 }
 
 impl CommandResult {
-    pub fn ok(output: impl Into<RString>) -> Self {
+    #[instrument]
+    pub fn ok<T: Into<RString> + Debug>(output: T) -> Self {
         Self {
             success: true,
             output: output.into(),
@@ -57,7 +61,8 @@ impl CommandResult {
         }
     }
 
-    pub fn err(output: impl Into<RString>, exit_code: exitcode::ExitCode) -> Self {
+    #[instrument]
+    pub fn err<T: Into<RString> + Debug>(output: T, exit_code: exitcode::ExitCode) -> Self {
         Self {
             success: false,
             output: output.into(),

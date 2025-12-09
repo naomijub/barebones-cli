@@ -27,13 +27,16 @@ ctrlc = "3"
 dirs = "6"
 exitcode = "1"
 log = "0.4"
-notify = "8"
+opentelemetry = "0.31.0"
+opentelemetry_sdk = { version = "0.31.0", features = ["metrics"] }
 thiserror = "2"
 toml = "0.9.8"
 self_update = { version = "0.42",  default-features = false, features = ["rustls", "archive-tar", "compression-flate2",] }
 semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tracing = { version = "0.1", features = ["attributes"] }
+tracing-opentelemetry = "0.32"
 
 
 [dependencies]
@@ -41,23 +44,28 @@ cli-dev.workspace = true
 
 abi_stable.workspace = true
 anyhow = "1" # Executable dependency only
+chrono = "0.4"
 clap.workspace = true
-colored = "3.0.0"
 config.workspace = true
 crossbeam-channel.workspace = true
 ctrlc.workspace = true
 dirs.workspace = true
-env_logger = "0.11" # This should not be responsibility of any crate
 exitcode.workspace = true
-log.workspace = true
 human-panic = "2" # Only executable should handle panic
-notify.workspace = true
+opentelemetry.workspace = true
+opentelemetry-otlp = "0.31.0"
+opentelemetry_sdk.workspace = true
+opentelemetry-stdout = { version = "0.31", features = ["trace"] }
+opentelemetry-appender-tracing = "0.31"
 self_update.workspace = true
 semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 toml.workspace = true
+tracing.workspace = true
+tracing-opentelemetry.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] } # This should not be responsibility of any crate
 
 [dev-dependencies]
 assert_cmd = "2"

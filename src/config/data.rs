@@ -2,8 +2,9 @@ use std::fmt::Display;
 
 use semver::Version;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use tracing::error;
 
-use crate::logger::log_error;
+use crate::APP_NAME;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct MyConfig {
@@ -33,7 +34,9 @@ where
 {
     let buf = String::deserialize(d)?;
 
-    Version::parse(&buf).map_err(|err| serde::de::Error::custom(err.to_string()))
+    Version::parse(&buf)
+        .inspect_err(|err| error!(target: APP_NAME, "{}", err))
+        .map_err(|err| serde::de::Error::custom(err.to_string()))
 }
 
 impl Default for MyConfig {
@@ -63,7 +66,7 @@ impl MyConfig {
     pub fn contains_plugins(&self, plugin: &String) {
         let contains = self.plugins.contains(plugin);
         if !contains {
-            log_error(format!("{} plugin not available", plugin));
+            error!(target: APP_NAME, "{} plugin not available", plugin);
             std::process::exit(exitcode::UNAVAILABLE);
         }
     }

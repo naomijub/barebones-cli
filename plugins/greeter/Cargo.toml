@@ -10,6 +10,8 @@ crate-type = ["cdylib"]
 cli-dev.workspace = true
 
 abi_stable.workspace = true
+clap.workspace = true
+tracing.workspace = true
 
 [lints]
 workspace = true
